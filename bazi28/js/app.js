@@ -10,7 +10,7 @@ import {
   signOut,
   updateJourneyProgress,
 } from "./api.js";
-import { admin, goal, journey, onboarding, profile, reading, today } from "./render.js?v=20260725-waiting-guardian";
+import { admin, goal, journey, onboarding, profile, reading, today } from "./render.js?v=20260725-potential-quadrants";
 
 const landing = document.querySelector("#landing");
 const app = document.querySelector("#app");
@@ -106,8 +106,14 @@ async function refreshState() {
   if (!session?.user) return;
   const date = todayText(state?.profile?.timezone);
   state = await loadUserState(session.user.id, date);
-  try { state.fortune = await invoke("destiny-orchestrator", { action: "daily_fortune" }); }
-  catch (error) { console.warn("daily fortune", error); }
+  const [fortuneResult, chartResult] = await Promise.allSettled([
+    invoke("destiny-orchestrator", { action: "daily_fortune" }),
+    invoke("destiny-orchestrator", { action: "birth_chart" }),
+  ]);
+  if (fortuneResult.status === "fulfilled") state.fortune = fortuneResult.value;
+  else console.warn("daily fortune", fortuneResult.reason);
+  if (chartResult.status === "fulfilled") state.birthChart = chartResult.value.chart;
+  else console.warn("birth chart", chartResult.reason);
   if (state.guardian || state.profile?.guardian_status === "ready") {
     try { state.guardianAssets = await invoke("destiny-guardian", { action: "get" }); }
     catch (error) { console.warn("guardian assets", error); }

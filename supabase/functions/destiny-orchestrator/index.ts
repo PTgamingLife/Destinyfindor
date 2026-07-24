@@ -10,6 +10,7 @@ import {
   todayInTimezone,
 } from "../_shared/destiny.ts";
 import type { SupabaseClient } from "jsr:@supabase/supabase-js@2.57.4";
+import { calculateBirthChart } from "./bazi.ts";
 
 const PROMPT_VERSION = "destiny-harness-1.0.0";
 const STEMS = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"];
@@ -289,7 +290,14 @@ async function saveBirth(req: Request, body: Record<string, unknown>) {
   if (!birthCity || !["exact", "approximate", "unknown"].includes(confidence)) {
     return json(req, { error: "出生資料不完整" }, 400);
   }
-  const { stem, element } = dayStemFor(birthDate);
+  const birthChartInput = {
+    birth_date: birthDate,
+    birth_time: birthTime,
+    birth_time_confidence: confidence,
+  };
+  const chart = calculateBirthChart(birthChartInput);
+  const stem = chart.day_stem;
+  const element = chart.day_element;
   const timezone = safeText(body.timezone, 60) || "Asia/Taipei";
   const profile = {
     user_id: userId,
@@ -310,14 +318,14 @@ async function saveBirth(req: Request, body: Record<string, unknown>) {
   const { data: lastChart } = await serviceClient.from("destiny_birth_charts").select("version")
     .eq("user_id", userId).order("version", { ascending: false }).limit(1).maybeSingle();
   const chartVersion = (lastChart?.version ?? 0) + 1;
-  const inputHash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(profile)));
+  const inputHash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(birthChartInput)));
   const hash = Array.from(new Uint8Array(inputHash)).map((b) => b.toString(16).padStart(2, "0")).join("");
   await serviceClient.from("destiny_birth_charts").insert({
     user_id: userId,
     version: chartVersion,
-    calculator_version: "day-stem-anchor-0.1",
+    calculator_version: chart.calculator_version,
     input_hash: hash,
-    chart: { day_stem: stem, day_element: element, precision: "initial", requires_full_solar_term_calculation: true },
+    chart,
   });
 
   const { data: activeModel } = await serviceClient.from("destiny_self_models").select("id")
@@ -326,13 +334,65 @@ async function saveBirth(req: Request, body: Record<string, unknown>) {
     await serviceClient.from("destiny_self_models").insert({
       user_id: userId,
       version: 1,
-      content: { fixed_layer: { day_stem: stem, element }, hypotheses: [], confirmed_patterns: [] },
+      content: {
+        fixed_layer: {
+          day_stem: stem,
+          element,
+          chart_version: chartVersion,
+          ten_god_quadrants: chart.ten_god_quadrants,
+        },
+        hypotheses: [],
+        confirmed_patterns: [],
+      },
       confidence: 0.1,
       change_note: "出生資料建立初始模型 V0",
       evidence_summary: ["出生資料"],
     });
   }
-  return json(req, { profile, chart_version: chartVersion });
+  return json(req, { profile, chart, chart_version: chartVersion });
+}
+
+async function birthChart(req: Request) {
+  const { userId, serviceClient } = await authenticate(req);
+  const { data: profile, error: profileError } = await serviceClient.from("destiny_profiles")
+    .select("birth_date,birth_time,birth_time_confidence,day_stem,day_element")
+    .eq("user_id", userId).maybeSingle();
+  if (profileError) throw profileError;
+  if (!profile?.birth_date) return json(req, { error: "請先完成出生資料" }, 409);
+
+  const input = {
+    birth_date: profile.birth_date,
+    birth_time: profile.birth_time,
+    birth_time_confidence: profile.birth_time_confidence,
+  };
+  const chart = calculateBirthChart(input);
+  const inputHash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(JSON.stringify(input)));
+  const hash = Array.from(new Uint8Array(inputHash)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  const { data: latest, error: latestError } = await serviceClient.from("destiny_birth_charts")
+    .select("version,calculator_version,input_hash")
+    .eq("user_id", userId).order("version", { ascending: false }).limit(1).maybeSingle();
+  if (latestError) throw latestError;
+
+  let version = latest?.version ?? 0;
+  if (latest?.calculator_version !== chart.calculator_version || latest?.input_hash !== hash) {
+    version += 1;
+    const { error: chartError } = await serviceClient.from("destiny_birth_charts").insert({
+      user_id: userId,
+      version,
+      calculator_version: chart.calculator_version,
+      input_hash: hash,
+      chart,
+    });
+    if (chartError) throw chartError;
+  }
+  if (profile.day_stem !== chart.day_stem || profile.day_element !== chart.day_element) {
+    const { error: updateError } = await serviceClient.from("destiny_profiles").update({
+      day_stem: chart.day_stem,
+      day_element: chart.day_element,
+    }).eq("user_id", userId);
+    if (updateError) throw updateError;
+  }
+  return json(req, { chart, chart_version: version });
 }
 
 function weekStartFor(dateText: string) {
@@ -776,6 +836,7 @@ Deno.serve(async (req: Request) => {
     const body = await req.json() as Record<string, unknown>;
     switch (body.action) {
       case "save_birth": return await saveBirth(req, body);
+      case "birth_chart": return await birthChart(req);
       case "daily_fortune": return await dailyFortune(req);
       case "metaphysics_submit": return await metaphysicsSubmit(req, body);
       case "metaphysics_accept": return await metaphysicsAccept(req, body);

@@ -281,6 +281,84 @@ function talentEnergyCard(state) {
   </article>`;
 }
 
+const TEN_GOD_TALENTS = {
+  比肩: "自主判斷、建立立場，也能在同儕中並肩推進",
+  劫財: "快速行動、串連人脈，擅長在競合中爭取機會",
+  食神: "穩定輸出、教學分享，把複雜內容變得好理解",
+  傷官: "創新表達、拆解框架，敢提出不同做法",
+  正財: "務實執行、管理資源，讓成果可累積與衡量",
+  偏財: "捕捉機會、整合資源，對市場與人際變化敏銳",
+  正官: "重視規則、責任與秩序，能在標準內可靠完成",
+  七殺: "果斷應變、承受壓力，在挑戰中快速突破",
+  正印: "系統學習、整理知識，能提供穩定支持與觀點",
+  偏印: "直覺洞察、跨域聯想，容易看見非典型解法",
+};
+
+const POTENTIAL_QUADRANTS = [
+  {
+    key: "current",
+    number: "01",
+    title: "現有能力",
+    formula: "天干有 × 地支有",
+    description: "你自己能感覺到，別人也較容易從行動中看見的能力。",
+    className: "potential-current",
+  },
+  {
+    key: "external",
+    number: "02",
+    title: "外顯能力",
+    formula: "天干沒有 × 地支有",
+    description: "行為已經展現、別人可能先注意到，但你未必把它當成能力。",
+    className: "potential-external",
+  },
+  {
+    key: "hidden",
+    number: "03",
+    title: "隱藏能力",
+    formula: "天干有 × 地支沒有",
+    description: "你知道自己有這個傾向，但尚未穩定轉成別人看得見的行為。",
+    className: "potential-hidden",
+  },
+  {
+    key: "unknown",
+    number: "04",
+    title: "未知超能力",
+    formula: "天干沒有 × 地支沒有",
+    description: "命盤未直接出現，可借助夥伴、工具或制度，與前三類能力組合放大。",
+    className: "potential-unknown",
+  },
+];
+
+function potentialQuadrantsCard(state) {
+  const chart = state.birthChart;
+  const quadrants = chart?.ten_god_quadrants;
+  if (!quadrants) {
+    return `<article class="card wide-card potential-card potential-loading"><p class="kicker">POTENTIAL MATRIX</p><h3>潛力四象限正在建立</h3><p>系統正在依完整四柱整理天干與地支的十神落點。</p></article>`;
+  }
+  const pillars = ["year", "month", "day", "time"].map((key) => {
+    const pillar = chart.pillars?.[key];
+    if (!pillar) return "";
+    const disabled = !pillar.included_in_quadrants;
+    return `<div class="potential-pillar ${disabled ? "is-muted" : ""}"><small>${escapeHtml(pillar.label)}</small><strong>${disabled ? "時辰未提供" : escapeHtml(pillar.gan_zhi)}</strong></div>`;
+  }).join("");
+  const cards = POTENTIAL_QUADRANTS.map((quadrant) => {
+    const items = Array.isArray(quadrants[quadrant.key]) ? quadrants[quadrant.key] : [];
+    const talents = items.length
+      ? items.map((item) => `<div class="potential-ability"><strong>${escapeHtml(item)}</strong><span>${escapeHtml(TEN_GOD_TALENTS[item] || "等待更多真實行為資料補充說明")}</span></div>`).join("")
+      : '<p class="potential-empty">此象限目前沒有十神落點；不等於做不到，只代表不是命盤直接顯示的主要路徑。</p>';
+    return `<section class="potential-quadrant ${quadrant.className}">
+      <div class="potential-quadrant-head"><span>${quadrant.number}</span><div><h4>${quadrant.title}</h4><small>${quadrant.formula}</small></div></div>
+      <p>${quadrant.description}</p><div class="potential-ability-list">${talents}</div>
+    </section>`;
+  }).join("");
+  return `<article class="card wide-card potential-card">
+    <div class="potential-head"><div><p class="kicker">POTENTIAL MATRIX</p><h3>潛力四象限</h3><p>天干代表較容易被自己意識到的想法偏向；地支藏干代表較容易落在行為與他人感受中的能力。</p></div><span class="potential-basis">日主 ${escapeHtml(chart.day_stem)}${escapeHtml(chart.day_element)}</span></div>
+    <div class="potential-pillars">${pillars}</div>
+    <div class="potential-matrix">${cards}</div>
+    <p class="potential-note">此版依出生地標準時間與節氣排盤；若出生在節氣或時辰交界，仍需加入經緯度與真太陽時校正。四象限是自我探索假設，不是能力上限。</p>
+  </article>`;
+}
+
 export function profile(state) {
   const guardian = state.guardianAssets?.guardian;
   const url = state.guardianAssets?.chibi_url;
@@ -293,7 +371,7 @@ export function profile(state) {
     : "<span>會隨探索逐漸清晰</span>";
   const symbolTags = symbols.map((symbol) => `<span>${escapeHtml(symbol)}</span>`).join("");
   return `${head("MY MODEL", "你的自我模型", "固定命盤、真實回答與行為證據分開保存。")}
-    <div class="grid">${talentEnergyCard(state)}<article class="card half-card guardian-panel"><div class="guardian-large">${url ? `<img src="${escapeHtml(url)}" alt="你的Q版守護天使">` : "<span>✦</span>"}</div>
+    <div class="grid">${talentEnergyCard(state)}${potentialQuadrantsCard(state)}<article class="card half-card guardian-panel"><div class="guardian-large">${url ? `<img src="${escapeHtml(url)}" alt="你的Q版守護天使">` : "<span>✦</span>"}</div>
       <div class="guardian-identity"><small>守護天使的名字</small><h3>${escapeHtml(spec.name || "尚未成形")}</h3><p>${escapeHtml(spec.essence || "完成第一道探索後即可生成。")}</p></div>
       ${guardian ? `<div class="guardian-profile-details"><div class="guardian-detail"><small>核心特性</small><div class="guardian-traits">${traitTags}</div></div>${spec.voice ? `<div class="guardian-detail"><small>陪伴方式</small><p>${escapeHtml(spec.voice)}</p></div>` : ""}${symbolTags ? `<div class="guardian-detail"><small>守護象徵</small><div class="guardian-symbols">${symbolTags}</div></div>` : ""}</div>` : ""}
       ${!guardian && state.answers.length ? button("生成雙版本守護天使", "create-guardian") : ""}</article>

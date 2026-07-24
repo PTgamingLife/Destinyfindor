@@ -1,0 +1,5 @@
+{
+  "imports": {
+    "lunar-typescript": "npm:lunar-typescript@1.8.6"
+  }
+}

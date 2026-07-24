@@ -159,9 +159,9 @@ h1 em { display: block; color: var(--sage-deep); font-style: normal; }
 .toast.show { opacity: 1; transform: translate(-50%,0); }
 .loading-overlay { position: fixed; z-index: 80; inset: 0; display: grid; place-content: center; justify-items: center; gap: 18px; background: rgba(244,239,229,.82); backdrop-filter: blur(14px); }
 .loading-guardian { position: relative; width: 224px; height: 224px; display: grid; place-items: center; }
-.loading-aura { position: absolute; inset: 24px; border: 1px solid rgba(183,137,76,.38); border-radius: 50%; box-shadow: 0 0 0 22px rgba(255,255,255,.24), 0 0 58px rgba(108,136,118,.24); animation: guardianAura 2.4s ease-in-out infinite; }
-.loading-guardian-avatar { position: relative; z-index: 1; width: 212px; height: 212px; display: grid; place-items: center; overflow: visible; animation: guardianFloat 2.4s ease-in-out infinite; }
-.loading-guardian-avatar img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 20px 26px rgba(53,87,70,.2)); }
+.loading-aura { position: absolute; inset: 17px; border: 1px solid rgba(183,137,76,.38); border-radius: 50%; box-shadow: 0 0 0 22px rgba(255,255,255,.24), 0 0 58px rgba(108,136,118,.24); animation: guardianAura 2.4s ease-in-out infinite; }
+.loading-guardian-avatar { position: relative; z-index: 1; width: 178px; height: 178px; display: grid; place-items: center; overflow: hidden; border: 7px solid rgba(255,255,255,.86); border-radius: 50%; background: radial-gradient(circle at 50% 38%, #fffaf0 0, #e0eadc 72%, #c8d8ca 100%); box-shadow: 0 20px 42px rgba(53,87,70,.2); animation: guardianFloat 2.4s ease-in-out infinite; }
+.loading-guardian-avatar img { width: 100%; height: 100%; object-fit: cover; object-position: center; }
 .loading-guardian-avatar span { color: var(--gold); font-size: 44px; text-shadow: 0 0 24px #fff; }
 .loading-overlay p { max-width: min(78vw, 360px); margin: 0; text-align: center; font: 600 15px/1.7 "Noto Serif TC"; }
 .reading-guardian { display: flex; align-items: center; gap: 14px; margin: -4px 0 22px; padding: 12px 14px; border: 1px solid rgba(108,136,118,.16); border-radius: 20px; background: linear-gradient(135deg, rgba(221,231,221,.64), rgba(255,250,240,.72)); }
@@ -302,14 +302,57 @@ h1 em { display: block; color: var(--sage-deep); font-style: normal; }
 .talent-evidence { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 14px; }
 .talent-evidence span { padding: 6px 9px; border-radius: 999px; color: var(--muted); background: rgba(49,84,68,.07); font-size: 10px; }
 
+/* Ten-god potential matrix */
+.potential-card { background: linear-gradient(145deg, rgba(255,252,245,.98), rgba(234,239,230,.95)); }
+.potential-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; }
+.potential-head h3 { margin-bottom: 4px; }
+.potential-head p:last-child { max-width: 720px; margin: 0; }
+.potential-basis { flex: 0 0 auto; padding: 9px 12px; border: 1px solid rgba(49,84,68,.13); border-radius: 999px; color: var(--sage-deep); background: rgba(255,255,255,.64); font-size: 12px; font-weight: 700; }
+.potential-pillars { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 18px 0 12px; }
+.potential-pillar { padding: 10px 12px; border: 1px solid rgba(49,84,68,.09); border-radius: 13px; text-align: center; background: rgba(255,255,255,.48); }
+.potential-pillar small, .potential-pillar strong { display: block; }
+.potential-pillar small { margin-bottom: 3px; color: var(--muted); font-size: 9px; letter-spacing: .12em; }
+.potential-pillar strong { font: 700 17px "Noto Serif TC"; }
+.potential-pillar.is-muted { opacity: .48; }
+.potential-matrix { display: grid; grid-template-columns: 1fr 1fr; grid-template-areas: "current hidden" "external unknown"; gap: 10px; }
+.potential-quadrant { position: relative; min-height: 210px; padding: 18px; overflow: hidden; border: 1px solid rgba(49,84,68,.1); border-radius: 18px; background: rgba(255,255,255,.54); }
+.potential-quadrant::after { position: absolute; right: 12px; top: -22px; color: rgba(49,84,68,.035); font: 700 104px "Noto Serif TC"; pointer-events: none; }
+.potential-current { grid-area: current; border-top: 3px solid var(--sage-deep); }
+.potential-current::after { content: "現"; }
+.potential-external { grid-area: external; border-left: 3px solid #7d9d83; }
+.potential-external::after { content: "顯"; }
+.potential-hidden { grid-area: hidden; border-top: 3px solid var(--gold); }
+.potential-hidden::after { content: "隱"; }
+.potential-unknown { grid-area: unknown; border-right: 3px solid #927db0; }
+.potential-unknown::after { content: "超"; }
+.potential-quadrant > * { position: relative; z-index: 1; }
+.potential-quadrant-head { display: flex; align-items: center; gap: 10px; }
+.potential-quadrant-head > span { display: grid; place-items: center; width: 31px; height: 31px; border-radius: 50%; color: #fff; background: var(--sage-deep); font-size: 9px; font-weight: 700; }
+.potential-hidden .potential-quadrant-head > span { background: var(--gold); }
+.potential-unknown .potential-quadrant-head > span { background: #796591; }
+.potential-quadrant h4 { margin: 0; font: 700 18px "Noto Serif TC"; }
+.potential-quadrant-head small { color: var(--muted); font-size: 9px; }
+.potential-quadrant > p { margin: 10px 0 12px; font-size: 11px; line-height: 1.65; }
+.potential-ability-list { display: grid; gap: 7px; }
+.potential-ability { display: grid; grid-template-columns: 44px 1fr; gap: 9px; align-items: start; padding: 9px 10px; border-radius: 12px; background: rgba(255,255,255,.68); }
+.potential-ability strong { color: var(--sage-deep); font-size: 11px; }
+.potential-ability span { color: var(--muted); font-size: 10px; line-height: 1.55; }
+.potential-empty { margin: 0; padding: 10px; border-radius: 12px; color: var(--muted); background: rgba(49,84,68,.045); font-size: 10px; line-height: 1.6; }
+.potential-note { margin: 13px 2px 0; color: var(--muted); font-size: 9px; line-height: 1.65; }
+
 @media (max-width: 800px) {
   .talent-energy-layout { grid-template-columns: 1fr; gap: 10px; }
   .talent-radar-wrap { min-height: 270px; }
+  .potential-matrix { grid-template-columns: 1fr; grid-template-areas: "current" "external" "hidden" "unknown"; }
+  .potential-quadrant { min-height: 0; }
 }
 @media (max-width: 560px) {
   .talent-energy-head { display: block; }
   .model-confidence { display: inline-block; margin-top: 8px; }
   .talent-score-list { grid-template-columns: 1fr; }
+  .potential-head { display: block; }
+  .potential-basis { display: inline-block; margin-top: 8px; }
+  .potential-pillars { grid-template-columns: repeat(2, 1fr); }
 }
 
 
