@@ -10,7 +10,7 @@ import {
   signOut,
   updateJourneyProgress,
 } from "./api.js";
-import { admin, goal, journey, onboarding, profile, reading, today } from "./render.js?v=20260724-metaphysics";
+import { admin, goal, journey, onboarding, profile, reading, today } from "./render.js?v=20260725-waiting-guardian";
 
 const landing = document.querySelector("#landing");
 const app = document.querySelector("#app");
@@ -38,16 +38,17 @@ function requestId() {
   return crypto.randomUUID();
 }
 
-function renderGuardianAvatar(container, imageUrl, alt = "你的Q版守護天使") {
+function renderGuardianAvatar(container, imageUrl, alt = "你的Q版守護天使", fallbackImageUrl = "") {
   container.replaceChildren();
-  if (!imageUrl) {
+  const source = imageUrl || fallbackImageUrl;
+  if (!source) {
     const fallback = document.createElement("span");
     fallback.textContent = "✦";
     container.append(fallback);
     return;
   }
   const image = document.createElement("img");
-  image.src = imageUrl;
+  image.src = source;
   image.alt = alt;
   image.decoding = "async";
   image.addEventListener("error", () => {
@@ -60,7 +61,12 @@ function renderGuardianAvatar(container, imageUrl, alt = "你的Q版守護天使
 
 function showLoading(message = "正在校準…") {
   loadingText.textContent = message;
-  renderGuardianAvatar(loadingGuardianAvatar, state?.guardianAssets?.chibi_url);
+  renderGuardianAvatar(
+    loadingGuardianAvatar,
+    state?.guardianAssets?.chibi_url,
+    state?.guardianAssets?.guardian?.character_spec?.name || "等待時機的守護天使",
+    "./assets/guardian-waiting.webp"
+  );
   loading.classList.remove("hidden");
 }
 
