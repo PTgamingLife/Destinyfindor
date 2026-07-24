@@ -1,4 +1,4 @@
-name: Deploy bazi28 to 28challenge
+name: Deploy Destinyfindor to GitHub Pages
 
 on:
   workflow_dispatch:
@@ -8,25 +8,33 @@ on:
       - "bazi28/**"
       - ".github/workflows/deploy-bazi28.yml"
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
 jobs:
   deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Destinyfindor
         uses: actions/checkout@v4
 
-      - name: Clone 28challenge and copy files
-        env:
-          DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
-        run: |
-          git clone https://x-access-token:${DEPLOY_TOKEN}@github.com/PTgamingLife/28challenge.git /tmp/28challenge
-          cp -R bazi28/. /tmp/28challenge/
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
 
-      - name: Commit and push
-        working-directory: /tmp/28challenge
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add --all
-          git diff --cached --quiet && echo "No changes" || git commit -m "feat: deploy destiny calibration app"
-          git push origin main
+      - name: Upload bazi28 site
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: bazi28
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
