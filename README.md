@@ -4,17 +4,17 @@
 
 ## 專案結構
 
-- `bazi28/`：Web App 前端
+- `bazi28/`：Web App 前端與 GitHub Pages 發佈來源
 - `supabase/functions/`：AI、守護天使與模型更新 Edge Functions
 - `supabase/migrations/`：資料庫結構與 RLS 安全規則
-- `.github/workflows/deploy-bazi28.yml`：同步部署至 `PTgamingLife/28challenge`
+- `.github/workflows/deploy-bazi28.yml`：GitHub Pages 自動部署
 
 ## 正式網站
 
-https://ptgaminglife.github.io/28challenge/
+https://ptgaminglife.github.io/destinyfindor/
 
-## 部署設定
+## 部署方式
 
-跨 repo 部署需要在本 repo 設定 GitHub Actions secret：`DEPLOY_TOKEN`。
+每次更新 `main` 分支的 `bazi28/**`，GitHub Actions 會自動部署至 GitHub Pages，不需要跨 repo Token。
 
 本程式庫由 `PTgamingLife/mainwork` 的命運校準專案獨立整理而來。
