@@ -161,14 +161,22 @@ export function journey(state, todayText) {
 
 export function goal(state) {
   if (state.goal) {
-    const value = state.goal.current_value ?? 0;
-    const target = state.goal.target_value ?? 0;
+    const target = Number(state.goal.target_value) || 0;
+    const value = Math.min(target || Number.MAX_SAFE_INTEGER, Math.max(0, Number(state.goal.current_value) || 0));
+    const progress = target > 0 ? Math.round(value / target * 100) : 0;
+    const rangeStep = target <= 100 && Number.isInteger(target) ? 1 : Math.max(.01, Number((target / 100).toFixed(2)));
+    const progressControl = target > 0 ? `
+      <div class="goal-progress" style="--goal-progress:${progress}%">
+        <div class="goal-progress-heading"><span>目前完成</span><strong id="goal-progress-value">${value} / ${target}</strong></div>
+        <input id="goal-progress-range" type="range" min="0" max="${target}" step="${rangeStep}" value="${value}" data-goal-id="${escapeHtml(state.goal.id)}" aria-label="目前目標完成進度">
+        <div class="goal-progress-foot"><b id="goal-progress-percent">${progress}%</b><span id="goal-progress-status">拖動調整，放開後儲存</span></div>
+      </div>` : `<div class="goal-progress-unavailable">這個目標尚未設定目標數字，因此無法計算完成比例。</div>`;
     return `${head("90-DAY GOAL", "你的主目標", "每天的建議都必須能解釋：為什麼更接近它？")}
-      <article class="card form-card"><p class="kicker">ACTIVE</p><h3>${escapeHtml(state.goal.title)}</h3><p>${escapeHtml(state.goal.why_text)}</p><div class="stat"><span>衡量方式</span><b>${escapeHtml(state.goal.metric_name)}</b></div><div class="stat"><span>目前／目標</span><b>${value} / ${target || "—"}</b></div><div class="stat"><span>期限</span><b>${escapeHtml(state.goal.target_date)}</b></div><div class="stat"><span>每週投入</span><b>${state.goal.weekly_minutes} 分</b></div></article>`;
+      <article class="card form-card goal-card"><p class="kicker">ACTIVE</p><h3>${escapeHtml(state.goal.title)}</h3><p>${escapeHtml(state.goal.why_text)}</p><div class="stat"><span>衡量方式</span><b>${escapeHtml(state.goal.metric_name)}</b></div><div class="stat"><span>目前／目標</span><b id="goal-current-display">${value} / ${target || "—"}</b></div>${progressControl}<div class="stat"><span>期限</span><b>${escapeHtml(state.goal.target_date)}</b></div><div class="stat"><span>每週投入</span><b>${state.goal.weekly_minutes} 分</b></div></article>`;
   }
   const target = new Date(); target.setDate(target.getDate() + 90);
   return `${head("90-DAY GOAL", "把願望變成可前進的目標", "第一版同時只保留一個主目標，避免努力被切碎。")}
-    <form id="goal-form" class="card form-card"><div class="field"><label>90天後想完成什麼？</label><input name="title" maxlength="160" placeholder="例如：建立每月可產生10,000元的顧問服務" required></div><div class="field-grid"><div class="field"><label>截止日期</label><input type="date" name="target_date" value="${target.toISOString().slice(0,10)}" required></div><div class="field"><label>每週可投入分鐘</label><input type="number" name="weekly_minutes" min="15" max="10080" value="180" required></div></div><div class="field-grid"><div class="field"><label>衡量方式</label><input name="metric_name" placeholder="例如：有效提案數" required></div><div class="field"><label>目標數字</label><input type="number" step="any" name="target_value" placeholder="20"></div></div><div class="field"><label>為什麼這對你重要？</label><textarea name="why_text" maxlength="1000" required></textarea></div><div class="field"><label>目前的現實限制</label><textarea name="constraints" maxlength="1000" placeholder="時間、家庭、健康、資金…"></textarea></div><button class="primary-button" type="submit">設定主目標</button></form>`;
+    <form id="goal-form" class="card form-card"><div class="field"><label>90天後想完成什麼？</label><input name="title" maxlength="160" placeholder="例如：建立每月可產生10,000元的顧問服務" required></div><div class="field-grid"><div class="field"><label>截止日期</label><input type="date" name="target_date" value="${target.toISOString().slice(0,10)}" required></div><div class="field"><label>每週可投入分鐘</label><input type="number" name="weekly_minutes" min="15" max="10080" value="180" required></div></div><div class="field-grid"><div class="field"><label>衡量方式</label><input name="metric_name" placeholder="例如：有效提案數" required></div><div class="field"><label>目標數字</label><input type="number" min="0.01" step="any" name="target_value" placeholder="20" required></div></div><div class="field"><label>為什麼這對你重要？</label><textarea name="why_text" maxlength="1000" required></textarea></div><div class="field"><label>目前的現實限制</label><textarea name="constraints" maxlength="1000" placeholder="時間、家庭、健康、資金…"></textarea></div><button class="primary-button" type="submit">設定主目標</button></form>`;
 }
 
 function guardianCompanion(state, message) {

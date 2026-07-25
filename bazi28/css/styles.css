@@ -113,6 +113,20 @@ h1 em { display: block; color: var(--sage-deep); font-style: normal; }
 .stat span { color: var(--muted); font-size: 12px; }
 .stat b { font: 700 18px "Noto Serif TC"; }
 .form-card { max-width: 700px; margin: 0 auto; }
+.goal-progress { margin: 10px 0 4px; padding: 18px 18px 15px; border: 1px solid rgba(49,84,68,.12); border-radius: 18px; background: linear-gradient(135deg, rgba(226,236,226,.72), rgba(255,252,245,.82)); }
+.goal-progress-heading, .goal-progress-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.goal-progress-heading span { color: var(--muted); font-size: 12px; font-weight: 700; }
+.goal-progress-heading strong { color: var(--sage-deep); font: 700 20px "Noto Serif TC"; }
+.goal-progress input[type="range"] { width: 100%; height: 32px; margin: 13px 0 7px; padding: 0; appearance: none; -webkit-appearance: none; border: 0; outline: 0; background: transparent; cursor: pointer; touch-action: pan-y; }
+.goal-progress input[type="range"]::-webkit-slider-runnable-track { height: 8px; border-radius: 999px; background: linear-gradient(90deg, var(--sage-deep) var(--goal-progress), rgba(49,84,68,.13) var(--goal-progress)); }
+.goal-progress input[type="range"]::-moz-range-track { height: 8px; border-radius: 999px; background: linear-gradient(90deg, var(--sage-deep) var(--goal-progress), rgba(49,84,68,.13) var(--goal-progress)); }
+.goal-progress input[type="range"]::-webkit-slider-thumb { width: 28px; height: 28px; margin-top: -10px; appearance: none; -webkit-appearance: none; border: 5px solid #fffaf0; border-radius: 50%; background: var(--gold); box-shadow: 0 3px 10px rgba(53,87,70,.28); }
+.goal-progress input[type="range"]::-moz-range-thumb { width: 19px; height: 19px; border: 5px solid #fffaf0; border-radius: 50%; background: var(--gold); box-shadow: 0 3px 10px rgba(53,87,70,.28); }
+.goal-progress input[type="range"]:focus-visible::-webkit-slider-thumb { outline: 3px solid rgba(195,143,68,.28); outline-offset: 3px; }
+.goal-progress input[type="range"]:disabled { cursor: wait; opacity: .65; }
+.goal-progress-foot b { color: var(--sage-deep); font-size: 13px; }
+.goal-progress-foot span { color: var(--muted); font-size: 10px; }
+.goal-progress-unavailable { margin: 10px 0; padding: 13px 15px; border-radius: 14px; color: var(--muted); background: rgba(49,84,68,.06); font-size: 11px; }
 .field { margin: 16px 0; }
 .field label { display: block; margin-bottom: 8px; font-size: 12px; font-weight: 700; }
 .field input, .field select, .field textarea { width: 100%; padding: 13px 14px; color: var(--ink); border: 1px solid var(--line); border-radius: 14px; outline: 0; background: rgba(255,255,255,.62); }

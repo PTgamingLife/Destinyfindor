@@ -8,9 +8,10 @@ import {
   saveWeeklyReview,
   signInWithGoogle,
   signOut,
+  updateGoalProgress,
   updateJourneyProgress,
 } from "./api.js";
-import { admin, goal, journey, onboarding, profile, reading, today } from "./render.js?v=20260725-potential-quadrants";
+import { admin, goal, journey, onboarding, profile, reading, today } from "./render.js?v=20260725-goal-progress";
 
 const landing = document.querySelector("#landing");
 const app = document.querySelector("#app");
@@ -405,6 +406,43 @@ document.addEventListener("change", (event) => {
     const output = document.querySelector("#metaphysics-file-name");
     if (output) output.textContent = event.target.files[0]?.name || "尚未選擇圖片";
   }
+  if (event.target.id === "goal-progress-range") {
+    const range = event.target;
+    const status = document.querySelector("#goal-progress-status");
+    if (status) status.textContent = "儲存中…";
+    range.disabled = true;
+    updateGoalProgress(range.dataset.goalId, session.user.id, Number(range.value))
+      .then((updatedGoal) => {
+        state.goal = updatedGoal;
+        if (status) status.textContent = "已儲存";
+        toast("目標進度已更新");
+      })
+      .catch((error) => {
+        range.value = state.goal.current_value ?? 0;
+        updateGoalProgressPreview(range);
+        if (status) status.textContent = "儲存失敗，請再試一次";
+        errorMessage(error);
+      })
+      .finally(() => { range.disabled = false; });
+  }
+});
+
+function updateGoalProgressPreview(range) {
+  const value = Number(range.value);
+  const target = Number(range.max);
+  const percent = target > 0 ? Math.round(value / target * 100) : 0;
+  const card = range.closest(".goal-progress");
+  if (card) card.style.setProperty("--goal-progress", `${percent}%`);
+  const valueOutput = document.querySelector("#goal-progress-value");
+  const currentOutput = document.querySelector("#goal-current-display");
+  const percentOutput = document.querySelector("#goal-progress-percent");
+  if (valueOutput) valueOutput.textContent = `${value} / ${target}`;
+  if (currentOutput) currentOutput.textContent = `${value} / ${target}`;
+  if (percentOutput) percentOutput.textContent = `${percent}%`;
+}
+
+document.addEventListener("input", (event) => {
+  if (event.target.id === "goal-progress-range") updateGoalProgressPreview(event.target);
 });
 
 document.addEventListener("submit", (event) => {

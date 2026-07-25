@@ -68,6 +68,15 @@ export async function saveGoal(payload) {
   return data;
 }
 
+export async function updateGoalProgress(goalId, userId, currentValue) {
+  const { data, error } = await supabase.from("destiny_goals").update({
+    current_value: currentValue,
+    updated_at: new Date().toISOString(),
+  }).eq("id", goalId).eq("user_id", userId).select().single();
+  if (error) failure(error, "目標進度尚未儲存");
+  return data;
+}
+
 export async function saveWeeklyReview(payload) {
   const { data, error } = await supabase.from("destiny_weekly_reviews").upsert(payload, {
     onConflict: "user_id,week_index",
