@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title">
+  <title id="title">命運校準 App Icon</title>
+  <defs>
+    <linearGradient id="background" x1="128" y1="96" x2="896" y2="928" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#426d59"/>
+      <stop offset=".52" stop-color="#315744"/>
+      <stop offset="1" stop-color="#203f33"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientTransform="translate(730 256) rotate(135) scale(500)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#f0d49b" stop-opacity=".24"/>
+      <stop offset="1" stop-color="#f0d49b" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#background)"/>
+  <rect width="1024" height="1024" fill="url(#glow)"/>
+  <circle cx="512" cy="512" r="376" fill="#f7f1e5" fill-opacity=".07" stroke="#ead7ac" stroke-opacity=".5" stroke-width="4"/>
+  <circle cx="512" cy="512" r="330" fill="#f7f1e5" fill-opacity=".04" stroke="#f7f1e5" stroke-opacity=".2" stroke-width="2"/>
+  <path d="M796 164l13 31 31 13-31 13-13 31-13-31-31-13 31-13 13-31Z" fill="#d5aa58"/>
+  <path d="M223 754l8 20 20 8-20 8-8 20-8-20-20-8 20-8 8-20Z" fill="#f7f1e5" fill-opacity=".62"/>
+  <g transform="matrix(.7 0 0 -.7 162 790)" fill="#fffaf0">
+    <path d="M279 540H533L594 614Q594 614 605 606Q616 598 633.5 584.5Q651 571 670.5 556Q690 541 705 527Q701 511 678 511H287ZM195 135H398V107H195ZM349 400H340L389 453L491 375Q487 371 478 365.5Q469 360 456 358V52Q456 49 441 42Q426 35 405.5 29.5Q385 24 368 24H349ZM132 400V445L241 400H406V372H237V21Q237 16 224 8Q211 0 190.5 -6.5Q170 -13 148 -13H132ZM524 405V451L637 405H807V377H633V-47Q633 -52 619.5 -61Q606 -70 585.5 -77Q565 -84 541 -84H524ZM760 405H750L800 461L910 379Q906 374 896 368.5Q886 363 872 361V132Q872 95 863.5 69Q855 43 827.5 28Q800 13 741 8Q740 33 737.5 52.5Q735 72 727 83Q720 95 707 103.5Q694 112 667 116V130Q667 130 676.5 129.5Q686 129 699 128.5Q712 128 724.5 127Q737 126 744 126Q754 126 757 131Q760 136 760 143ZM533 779Q499 727 444.5 676Q390 625 322 579.5Q254 534 178 496.5Q102 459 24 434L19 447Q85 482 150 531.5Q215 581 270.5 637.5Q326 694 365.5 750.5Q405 807 420 856L598 813Q596 804 585 798.5Q574 793 550 790Q584 751 634 719Q684 687 742 662.5Q800 638 861 620.5Q922 603 978 593V577Q952 569 933.5 551Q915 533 903.5 510Q892 487 888 465Q809 496 740 542Q671 588 618 647.5Q565 707 533 779Z"/>
+  </g>
+</svg>
