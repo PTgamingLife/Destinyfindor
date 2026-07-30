@@ -10,7 +10,7 @@ import {
   signOut,
   updateGoalProgress,
   updateJourneyProgress,
-} from "./api.js";
+} from "./api.js?v=20260730-daily-action-resilience";
 import { admin, goal, journey, onboarding, profile, reading, today } from "./render.js?v=20260725-goal-progress";
 
 const landing = document.querySelector("#landing");

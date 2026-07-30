@@ -35,6 +35,16 @@ const actionSchema = {
   required: ["action", "minutes", "goal_link", "done_definition", "lite_version", "rationale", "guardian_line"],
 };
 
+type DailyActionSuggestion = {
+  action: string;
+  minutes: number;
+  goal_link: string;
+  done_definition: string;
+  lite_version: string;
+  rationale: string;
+  guardian_line: string;
+};
+
 const readingSchema = {
   type: "object",
   additionalProperties: false,
@@ -278,6 +288,34 @@ async function reserveUsage(service: SupabaseClient, userId: string, actionType:
 
 async function markUsage(service: SupabaseClient, id: string, status: string) {
   if (id) await service.from("destiny_ai_usage").update({ status }).eq("id", id);
+}
+
+function fallbackDailyAction(
+  context: Awaited<ReturnType<typeof loadContext>>,
+  energy: number,
+  availableMinutes: number,
+): DailyActionSuggestion {
+  const goalTitle = safeText(context.goal?.title, 120) || "你的主目標";
+  const metricName = safeText(context.goal?.metric_name, 80) || "目標進度";
+  const recentMisses = context.recent.slice(0, 3)
+    .filter((item) => ["partial", "not_completed", "not_suitable"].includes(item.status)).length;
+  const energyCaps = [8, 15, 25, 40, 60];
+  const cap = recentMisses >= 2 ? Math.min(15, energyCaps[energy - 1]) : energyCaps[energy - 1];
+  const minutes = Math.max(3, Math.min(availableMinutes, cap));
+  const action = minutes <= 15
+    ? `針對「${goalTitle}」，寫下最小的下一步，並立刻完成其中一個可以在 ${minutes} 分鐘內結束的部分。`
+    : `針對「${goalTitle}」，選一個最能推進「${metricName}」的具體成果，專注完成 ${minutes} 分鐘並記錄結果。`;
+  return {
+    action,
+    minutes,
+    goal_link: `這一步直接推進「${goalTitle}」，完成後可回到目標頁更新「${metricName}」。`,
+    done_definition: `計時 ${minutes} 分鐘，留下至少一項可看見的成果或紀錄。`,
+    lite_version: `先做 3 分鐘：寫下下一步，立刻開始第一個動作。`,
+    rationale: recentMisses >= 2
+      ? "近期完成度較不穩定，因此先縮小任務，讓行動重新累積。"
+      : `依照你目前的能量與可用時間，先推動一個能完成、能記錄的進展。`,
+    guardian_line: "不用一次扭轉命運，先把今天能完成的一小格推進。",
+  };
 }
 
 async function saveBirth(req: Request, body: Record<string, unknown>) {
@@ -591,13 +629,23 @@ async function dailyAction(req: Request, body: Record<string, unknown>) {
   const reservation = await reserveUsage(serviceClient, userId, "daily_action", date, requestId);
   if (!reservation.reserved) return json(req, { error: "今日建議已產生，請重新整理" }, 409);
 
+  let generated: DailyActionSuggestion;
+  let usedFallback = false;
   try {
-    const generated = await openAIJson(
+    generated = await openAIJson(
       "destiny_daily_action",
       actionSchema,
       `${BASE_SYSTEM}\n任務時間不得超過使用者可用時間。若近期連續三次未完成，必須縮小任務。`,
       { ...context, today: date, energy, available_minutes: availableMinutes },
-    );
+    ) as DailyActionSuggestion;
+  } catch (error) {
+    usedFallback = true;
+    generated = fallbackDailyAction(context, energy, availableMinutes);
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("daily-action-ai-fallback", message.slice(0, 500));
+  }
+
+  try {
     const { data, error } = await serviceClient.from("destiny_daily_actions").insert({
       user_id: userId,
       goal_id: context.goal.id,
@@ -609,12 +657,16 @@ async function dailyAction(req: Request, body: Record<string, unknown>) {
       lite_version: generated.lite_version,
       rationale: generated.rationale,
       model_version: context.model?.version ?? 1,
-      prompt_version: PROMPT_VERSION,
+      prompt_version: usedFallback ? `${PROMPT_VERSION}:fallback` : PROMPT_VERSION,
       request_id: requestId,
     }).select().single();
     if (error) throw error;
-    await markUsage(serviceClient, reservation.usage.id, "succeeded");
-    return json(req, { action: data, guardian_line: generated.guardian_line });
+    await markUsage(serviceClient, reservation.usage.id, usedFallback ? "refunded" : "succeeded");
+    return json(req, {
+      action: data,
+      guardian_line: generated.guardian_line,
+      fallback: usedFallback,
+    });
   } catch (error) {
     await markUsage(serviceClient, reservation.usage.id, "refunded");
     throw error;

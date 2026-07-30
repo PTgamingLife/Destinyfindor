@@ -5,9 +5,27 @@ function failure(error, fallback = "服務暫時無法使用") {
   throw new Error(message);
 }
 
+async function functionFailure(error, fallback = "守護天使暫時無法回應，請稍後再試") {
+  let message = "";
+  const response = error?.context;
+  if (response && typeof response.clone === "function") {
+    try {
+      const payload = await response.clone().json();
+      if (typeof payload?.error === "string") message = payload.error;
+    } catch {
+      // The response may not contain JSON. Use a safe localized fallback below.
+    }
+  }
+  if (!message) {
+    const raw = String(error?.message || "");
+    message = /non-2xx|failed to send|fetch/i.test(raw) ? fallback : raw;
+  }
+  throw new Error(message || fallback);
+}
+
 export async function invoke(functionName, body) {
   const { data, error } = await supabase.functions.invoke(functionName, { body });
-  if (error) failure(error);
+  if (error) await functionFailure(error);
   if (data?.error) throw new Error(data.error);
   return data;
 }
