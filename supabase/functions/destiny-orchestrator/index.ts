@@ -79,6 +79,18 @@ const proposalSchema = {
   required: ["patch", "confidence", "change_note", "evidence"],
 };
 
+type WeeklyModelProposal = {
+  patch: {
+    patterns: string[];
+    strengths: string[];
+    risks: string[];
+    action_preferences: string[];
+  };
+  confidence: number;
+  change_note: string;
+  evidence: string[];
+};
+
 function pillarFor(dateText: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateText)) throw new Error("INVALID_DATE");
   const date = new Date(`${dateText}T00:00:00Z`);
@@ -315,6 +327,42 @@ function fallbackDailyAction(
       ? "近期完成度較不穩定，因此先縮小任務，讓行動重新累積。"
       : `依照你目前的能量與可用時間，先推動一個能完成、能記錄的進展。`,
     guardian_line: "不用一次扭轉命運，先把今天能完成的一小格推進。",
+  };
+}
+
+function fallbackWeeklyProposal(
+  review: Record<string, unknown>,
+  context: Awaited<ReturnType<typeof loadContext>>,
+): WeeklyModelProposal {
+  const answers = review.answers && typeof review.answers === "object"
+    ? review.answers as Record<string, unknown>
+    : {};
+  const progress = safeText(answers.progress, 80) || "尚未標記的方向";
+  const block = safeText(answers.block, 80) || "尚未辨識的阻力";
+  const energy = safeText(answers.energy, 40) || "未填寫";
+  const execution = safeText(answers.execution, 40) || "未填寫";
+  const nextFocus = safeText(answers.next_focus, 80) || "維持一個可完成的小步驟";
+  const helpfulness = safeText(answers.helpfulness, 40) || "未填寫";
+  const satisfaction = safeText(answers.satisfaction, 20) || "未填寫";
+  const goalTitle = safeText(context.goal?.title, 120) || "目前主目標";
+  const weekIndex = Math.max(1, Math.min(52, Number(review.week_index ?? 1) || 1));
+
+  return {
+    patch: {
+      patterns: [`推進「${progress}」時，主要阻力目前被辨識為「${block}」。`],
+      strengths: [`能完成第 ${weekIndex} 週回顧，並主動把下週重點設定為「${nextFocus}」。`],
+      risks: [`目前精力為「${energy}」、執行情況為「${execution}」，若任務過大，可能降低持續行動的穩定度。`],
+      action_preferences: [`圍繞「${goalTitle}」一次只推進一件事，以「${nextFocus}」為下週優先原則，並把任務切成可在一次專注時段完成的大小。`],
+    },
+    confidence: 0.3,
+    change_note: `依第 ${weekIndex} 週回顧建立低信心更新草案；這只是待確認假設，不會自動改寫模型。`,
+    evidence: [
+      `本週進展方向：${progress}`,
+      `主要阻力：${block}`,
+      `精力：${energy}；執行情況：${execution}`,
+      `建議幫助程度：${helpfulness}；本週滿意度：${satisfaction}`,
+      `下週想改善：${nextFocus}`,
+    ],
   };
 }
 
@@ -727,14 +775,30 @@ async function weeklyProposal(req: Request, body: Record<string, unknown>) {
     loadContext(serviceClient, userId),
   ]);
   if (!review) return json(req, { error: "找不到每週回顧" }, 404);
-  const proposal = await openAIJson(
-    "destiny_model_proposal",
-    proposalSchema,
-    `${BASE_SYSTEM}\n你只能提出模型更新草案，不得把一次回答永久化。每項更新至少引用一個真實回顧或行動證據。`,
-    { review, ...context },
-  );
-  await serviceClient.from("destiny_weekly_reviews").update({ proposal, proposal_status: "pending" }).eq("id", reviewId);
-  return json(req, { proposal });
+  if (review.proposal) return json(req, { proposal: review.proposal, idempotent: true });
+
+  let proposal: WeeklyModelProposal;
+  let usedFallback = false;
+  try {
+    proposal = await openAIJson(
+      "destiny_model_proposal",
+      proposalSchema,
+      `${BASE_SYSTEM}\n你只能提出模型更新草案，不得把一次回答永久化。每項更新至少引用一個真實回顧或行動證據。`,
+      { review, ...context },
+    ) as WeeklyModelProposal;
+  } catch (error) {
+    usedFallback = true;
+    proposal = fallbackWeeklyProposal(review, context);
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("weekly-proposal-ai-fallback", message.slice(0, 500));
+  }
+
+  const { error } = await serviceClient.from("destiny_weekly_reviews")
+    .update({ proposal, proposal_status: "pending" })
+    .eq("id", reviewId)
+    .eq("user_id", userId);
+  if (error) throw error;
+  return json(req, { proposal, fallback: usedFallback });
 }
 
 async function acceptProposal(req: Request, body: Record<string, unknown>) {
